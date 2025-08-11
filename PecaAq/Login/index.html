@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PeçaAq - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <main class="login-container">
+        <section class="login-card" aria-label="Login do PeçaAq">
+
+            <!-- Abas -->
+            <div class="tabs">
+                <button class="tab active" data-tab="cliente">Sou Cliente</button>
+                <button class="tab" data-tab="empresa">Sou Empresa</button>
+            </div>
+
+            <!-- Logo -->
+            <div class="brand">
+                <img class="logo-img" src="imgLogin/imgLogin-removebg-preview.png"
+                    alt="Logo do PECAAQ - Serviço de Estacionamento">
+                <h1 class="brand-title"></h1>
+            </div>
+
+
+            <!-- Form Cliente -->
+            <form class="login-form active" id="form-cliente">
+                <div class="form-field">
+                    <label for="email-cliente">E-mail</label>
+                    <input type="email" id="email-cliente" placeholder="cliente@exemplo.com" required>
+                </div>
+                <div class="form-field">
+                    <label for="senha-cliente">Senha</label>
+                    <input type="password" id="senha-cliente" placeholder="Sua senha" required>
+                </div>
+                <button type="submit" class="primary-btn">Entrar como Cliente</button>
+            </form>
+
+            <!-- Form Empresa -->
+            <form class="login-form" id="form-empresa">
+                <div class="form-field">
+                    <label for="cnpj">CNPJ</label>
+                    <input type="text" id="cnpj" placeholder="00.000.000/0000-00" required>
+                </div>
+                <div class="form-field">
+                    <label for="senha-empresa">Senha</label>
+                    <input type="password" id="senha-empresa" placeholder="Senha da empresa" required>
+                </div>
+                <button type="submit" class="primary-btn">Entrar como Empresa</button>
+            </form>
+
+        </section>
+    </main>
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>
