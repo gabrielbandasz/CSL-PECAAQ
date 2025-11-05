@@ -21,30 +21,58 @@ links.forEach((link, idx) => {
   });
 });
 
-// ======= Listar produtos =======
+// LISTAR produtos (usa o novo formato JSON)
 async function listarProdutos() {
   try {
     const resp = await fetch('listarProdutos.php');
-    const produtos = await resp.json();
+    const json = await resp.json();
+    if (!json || json.status !== 'ok') {
+      console.error('listarProdutos: resposta inválida', json);
+      return;
+    }
+    const produtos = json.produtos || [];
     const tbody = document.getElementById('lista-produtos');
     tbody.innerHTML = '';
-
     produtos.forEach(p => {
       tbody.innerHTML += `
         <tr>
-          <td><img src="uploads/${p.foto_principal}" width="50" style="border-radius:4px;"></td>
+          <td><img src="${p.foto_principal}" width="50" style="border-radius:4px;"></td>
           <td>${p.nome}</td>
           <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
         </tr>
       `;
     });
-
-    // Atualiza total de produtos
     document.getElementById('totalProdutos').textContent = produtos.length;
-  } catch(err) {
+  } catch (err) {
     console.error('Erro ao listar produtos:', err);
   }
 }
+
+// CADASTRO via AJAX (espera JSON)
+const form = document.getElementById('formProduto');
+const fotoPreview = document.getElementById('fotoPreview');
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const formData = new FormData(form);
+  try {
+    const resp = await fetch('processaProduto.php', { method: 'POST', body: formData });
+    const json = await resp.json();
+    if (!json) throw new Error('Resposta inválida do servidor');
+    if (json.status === 'ok') {
+      alert(json.message || 'Produto cadastrado');
+      form.reset();
+      fotoPreview.innerHTML = '<span>+</span>';
+      listarProdutos();
+    } else {
+      alert('Erro: ' + (json.message || 'Falha ao cadastrar'));
+    }
+  } catch (err) {
+    console.error('Erro ao cadastrar produto:', err);
+    alert('Erro ao cadastrar produto. Veja console.');
+  }
+});
+
 
 // ======= Filtro de pesquisa =======
 document.getElementById('search').addEventListener('input', e => {
@@ -55,24 +83,6 @@ document.getElementById('search').addEventListener('input', e => {
   });
 });
 
-// ======= Cadastro via AJAX =======
-const form = document.getElementById('formProduto');
-const fotoPreview = document.getElementById('fotoPreview');
-
-form.addEventListener('submit', async e => {
-  e.preventDefault();
-  const formData = new FormData(form);
-  try {
-    const resp = await fetch('processaProduto.php', { method: 'POST', body: formData });
-    const texto = await resp.text();
-    alert(texto);
-    form.reset();
-    fotoPreview.innerHTML = '<span>+</span>';
-    listarProdutos(); // Atualiza tabela automaticamente
-  } catch(err) {
-    console.error('Erro ao cadastrar produto:', err);
-  }
-});
 
 // ======= Preview da imagem =======
 document.getElementById('foto').addEventListener('change', e => {

@@ -33,18 +33,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadProducts() {
         try {
-            const resp = await fetch('../Empresas/listarProdutos.php');
+            // caminho esperado: ajuste se necessário
+            const resp = await fetch('../Produtos/listarProdutos.php', { cache: 'no-store' });
             if (!resp.ok) throw new Error(`Erro HTTP: ${resp.status}`);
             const data = await resp.json();
 
-            products = data.map(p => ({
-                id: p.id_produto,
-                title: p.nome,
+            // aceita formatos: array diretamente ou { status: 'ok', produtos: [...] }
+            const rawList = Array.isArray(data) ? data : (Array.isArray(data.produtos) ? data.produtos : (data.produtos || []));
+            products = rawList.map(p => ({
+                id: p.id_produto ?? p.id ?? null,
+                title: p.nome ?? p.title ?? 'Produto',
                 brand: p.marca || 'Genérica',
-                category: p.categoria || 'Peças',
-                price: parseFloat(p.preco) || 0,
-                model: p.sku_universal || 'Universal',
-                image: "../Empresas/uploads/" + (p.foto_principal || ''),
+                category: p.categoria || p.categoria || 'Peças',
+                price: parseFloat((p.preco ?? p.price) || 0) || 0,
+                model: p.sku_universal || p.sku || 'Universal',
+                // ajusta o caminho da imagem: altere se sua pasta for diferente
+                image: (p.foto_principal && !p.foto_principal.startsWith('http') && !p.foto_principal.startsWith('/')) ? "../Dashboard/uploads/" + p.foto_principal : (p.foto_principal || ''),
                 parcels: 3,
                 addedAt: p.data_cadastro ? new Date(p.data_cadastro).getTime() : Date.now()
             }));
@@ -56,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
             applyFiltersAndRender();
         } catch (err) {
             console.error('Erro ao carregar produtos:', err);
-            if (productsGrid) productsGrid.innerHTML = `<div style="padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;text-align:center;">Erro ao carregar produtos</div>`;
+            if (productsGrid) productsGrid.innerHTML = `<div style="padding:20px;background:#fff;border-radius:10px;border:1px solid #eee;text-align:center;">Erro ao carregar produtos: ${err.message}</div>`;
         }
     }
 
@@ -135,6 +139,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const tpl = document.getElementById('productCardTpl');
         if (!tpl) {
             console.error('Template productCardTpl não encontrado no DOM.');
+            // fallback simples: render cards diretamente
+            slice.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'product-card simple';
+                div.innerHTML = `
+                    <img src="${p.image}" alt="${p.title}" style="width:100%; height:160px; object-fit:cover; border-radius:8px;">
+                    <h4>${p.title}</h4>
+                    <div>R$ ${(Number(p.price)||0).toFixed(2).replace('.',',')}</div>
+                    <button class="buy-btn">Comprar</button>
+                `;
+                div.addEventListener('click', ev => {
+                    if (!ev.target.classList.contains('buy-btn')) {
+                        window.location.href = `../Comprar/indexComprar.html?id=${encodeURIComponent(p.id)}`;
+                    }
+                });
+                div.querySelector('.buy-btn')?.addEventListener('click', ev => {
+                    ev.stopPropagation();
+                    window.location.href = `../Comprar/indexComprar.html?id=${encodeURIComponent(p.id)}`;
+                });
+                productsGrid.appendChild(div);
+            });
             return;
         }
 
@@ -177,9 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // se quiser redirecionar para checkout com id:
                     window.location.href = `../Comprar/indexComprar.html?id=${encodeURIComponent(p.id)}`;
                 });
-            } else {
-                // caso não exista o botão, apenas log
-                // console.warn('buy-btn não encontrado para o produto', p.id);
             }
 
             productsGrid.appendChild(node);
@@ -226,25 +248,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // inicializa
     loadProducts();
 });
+
+// perfil / logout (mostra no header se houver usuarioLogado)
 document.addEventListener('DOMContentLoaded', () => {
     const perfilContainer = document.getElementById('perfil-container');
     const loginLink = document.getElementById('loginLink');
-    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
+    let usuario = null;
+    try { usuario = JSON.parse(localStorage.getItem('usuarioLogado')); } catch(e){ usuario = null; }
 
-    if (usuario) {
+    if (usuario && perfilContainer) {
       // Mostra nome/ícone de perfil
       perfilContainer.innerHTML = `
         <div class="perfil-info">
           <img src="../Login/imgLogin/perfil.png" alt="Perfil" class="perfil-icon">
-          <span>${usuario.nome}</span>
+          <span>${usuario.nome_razao_social || usuario.nome || usuario.nome_razao || usuario.nome_razao_social || usuario.nome}</span>
           <button id="logoutBtn">Sair</button>
         </div>
       `;
 
       // botão de sair
-      document.getElementById('logoutBtn').addEventListener('click', () => {
+      document.getElementById('logoutBtn')?.addEventListener('click', () => {
         localStorage.removeItem('usuarioLogado');
+        // opcional: chamar logout server-side
+        fetch('/Login/logout.php', { method: 'POST', credentials: 'same-origin' }).catch(()=>{});
         window.location.reload();
       });
+    } else {
+      // se não logado, mostra link para login (se existir)
+      if (perfilContainer && loginLink) {
+        perfilContainer.innerHTML = `<a href="${loginLink.getAttribute('href') || '../Login/indexLogin.html'}">Faça seu cadastro</a>`;
+      }
     }
-  });
+});
