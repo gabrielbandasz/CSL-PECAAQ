@@ -1,10 +1,10 @@
 <?php
-// Login/logout.php
 session_start();
-header('Content-Type: application/json; charset=utf-8');
 
-// Força destruir sessão
+// limpar variáveis da sessão
 $_SESSION = [];
+
+// apagar cookie da sessão
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -12,8 +12,9 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+
 session_destroy();
 
-// Resposta amigável (o front-end pode recarregar ou tratar)
-echo json_encode(['status'=>'ok','message'=>'Desconectado']);
+// redirecionar para a página de login
+header("Location: ../Login/indexLogin.html");
 exit;
