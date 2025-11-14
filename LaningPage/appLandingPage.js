@@ -1,133 +1,98 @@
-// Utilidades
-const $ = (sel, el = document) => el.querySelector(sel);
-const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
-
-// Ano no footer
-$("#year").textContent = new Date().getFullYear();
-
-// Menu mobile
-const toggle = $(".nav__toggle");
-const nav = $(".nav");
-if (toggle) {
-  toggle.addEventListener("click", () => {
-    const open = nav.style.display === "flex";
-    nav.style.display = open ? "none" : "flex";
-    toggle.setAttribute("aria-expanded", String(!open));
-  });
-}
-
-// --------------- Carrossel HERO (automático + botões) ---------------
-(function initHero(){
-  const track = document.querySelector('[data-carousel="hero"]');
-  if (!track) return;
-  const slides = $$(".hero__slide", track);
-  const dotsWrap = $("[data-dots]");
-  let index = 0, timer;
-  const setIndex = (i) => {
-    index = (i + slides.length) % slides.length;
-    track.style.transform = `translateX(${-index * 100}%)`;
-    // dots
-    if (dotsWrap) {
-      dotsWrap.innerHTML = "";
-      slides.forEach((_, n) => {
-        const b = document.createElement("button");
-        b.setAttribute("aria-label", `Ir ao slide ${n+1}`);
-        if (n === index) b.setAttribute("aria-current", "true");
-        b.addEventListener("click", () => setIndex(n));
-        dotsWrap.appendChild(b);
-      });
-    }
-  };
-
-  const next = () => setIndex(index + 1);
-  const prev = () => setIndex(index - 1);
-
-  // Botões
-  $("[data-next]")?.addEventListener("click", next);
-  $("[data-prev]")?.addEventListener("click", prev);
-
-  // Auto-play (pausa quando usuário interage)
-  const start = () => { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    timer = setInterval(next, 5000);
-  };
-  const stop = () => clearInterval(timer);
-  track.addEventListener("pointerdown", stop);
-  track.addEventListener("mouseenter", stop);
-  track.addEventListener("mouseleave", start);
-
-  setIndex(0); start();
-})();
-
-// --------------- Carrossel Cards (scroll horizontal com botões) ---------------
-(function initCards(){
-  const container = document.querySelector('[data-carousel="cards"]');
-  if (!container) return;
-  const prevBtn = document.querySelector('button[data-prev="#cards"]');
-  const nextBtn = document.querySelector('button[data-next="#cards"]');
-  const step = () => container.clientWidth * 0.9;
-
-  nextBtn?.addEventListener("click", () => container.scrollBy({ left: +step(), behavior: "smooth" }));
-  prevBtn?.addEventListener("click", () => container.scrollBy({ left: -step(), behavior: "smooth" }));
-})();
-
-// --------------- Modal: "vários mesmos produtos com preços diferentes" ---------------
-const ofertasExemplo = [
-  { loja: "Distribuidora Alfa", prazo: "Entrega 24h", preco: 329.90 },
-  { loja: "Auto Peças Beta", prazo: "Retirada hoje", preco: 315.50 },
-  { loja: "Fornec. Gamma", prazo: "Envio em 48h", preco: 339.00 },
-  { loja: "Loja Delta", prazo: "Entrega expressa", preco: 349.90 }
-];
-
-const modal = $("#modal-ofertas");
-const list = $("#offers-list");
-$$("[data-open-modal]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    list.innerHTML = "";
-    ofertasExemplo.forEach(o => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span><strong>${o.loja}</strong> • <small>${o.prazo}</small></span>
-        <span class="offer__price">R$ ${o.preco.toFixed(2)}</span>
-        <button class="btn btn--primary">Adicionar ao carrinho</button>
-      `;
-      list.appendChild(li);
+document.addEventListener("DOMContentLoaded", () => {
+  // ---------- BOTÃO EXPLORAR ----------
+  const explorarBtn = document.getElementById("explorarBtn");
+  if (explorarBtn) {
+    explorarBtn.addEventListener("click", () => {
+      try {
+        const usuarioData = localStorage.getItem("usuarioLogado");
+        if (usuarioData) {
+          // Usuário logado -> vai para Sobre
+          window.location.href = "../Sobre/index.html";
+        } else {
+          // Não logado -> vai para Login
+          window.location.href = "../Sobre/index.html";
+        }
+      } catch (err) {
+        console.error("Erro ao redirecionar no explorarBtn:", err);
+      }
     });
-    modal.showModal();
-  });
-});
+  } else {
+    console.warn("Botão 'explorarBtn' não encontrado no DOM. Verifique se o id está correto no HTML.");
+  }
 
-// Fechar modal com o X ou ESC
-$(".modal__close")?.addEventListener("click", () => modal.close());
+  // ---------- (restante do seu código existente) ----------
+  // perfil/login/logout (exemplo simplificado - mantenha sua lógica já funcional)
+  const userArea = document.querySelector(".btn-cadastro");
+  const usuarioData = localStorage.getItem("usuarioLogado");
 
-// Acessibilidade extra: fecha ao clicar fora do conteúdo
-modal?.addEventListener("click", (e) => {
-  const dialogRect = modal.getBoundingClientRect();
-  if (
-    e.clientX < dialogRect.left || e.clientX > dialogRect.right ||
-    e.clientY < dialogRect.top  || e.clientY > dialogRect.bottom
-  ) modal.close();
-});
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const perfilContainer = document.getElementById('perfil-container');
-    const loginLink = document.getElementById('loginLink');
-    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
-
-    if (usuario) {
-      // Mostra nome/ícone de perfil
-      perfilContainer.innerHTML = `
-        <div class="perfil-info">
-          <img src="../Login/imgLogin/perfil.png" alt="Perfil" class="perfil-icon">
-          <span>${usuario.nome}</span>
-          <button id="logoutBtn">Sair</button>
-        </div>
-      `;
-
-      // botão de sair
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('usuarioLogado');
-        window.location.reload();
-      });
+  if (!usuarioData) {
+    if (userArea) {
+      userArea.textContent = "Faça seu login";
+      userArea.onclick = () => window.location.href = "../Login/indexLogin.html";
+      userArea.style.display = "inline-block";
     }
-  });
+  } else {
+    try {
+      const usuario = JSON.parse(usuarioData);
+      if (userArea) {
+        userArea.textContent = "Perfil";
+        userArea.style.background = usuario.tipo && usuario.tipo.toLowerCase() === "empresa"
+          ? "#f39c12"
+          : "#27ae60";
+        userArea.onclick = () => {
+          if (usuario.tipo && (usuario.tipo.toLowerCase() === "empresa" || usuario.tipo.toLowerCase() === "fornecedor")) {
+            window.location.href = "../DashBoard/index.html";
+          } else {
+            window.location.href = "../PerfilCliente/perfil_cliente.php";
+          }
+        };
+      }
 
+      // cria botão sair se não existir
+      let logoutBtn = document.querySelector(".btnSair");
+      if (!logoutBtn) {
+        logoutBtn = document.createElement("button");
+        logoutBtn.textContent = "Sair";
+        logoutBtn.className = "btnSair";
+        logoutBtn.style.marginLeft = "10px";
+        logoutBtn.style.background = "#e74c3c";
+        logoutBtn.style.border = "none";
+        logoutBtn.style.color = "#fff";
+        logoutBtn.style.padding = "10px 20px";
+        logoutBtn.style.borderRadius = "10px";
+        logoutBtn.style.cursor = "pointer";
+        userArea.parentElement.appendChild(logoutBtn);
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("usuarioLogado");
+          location.reload();
+        });
+      }
+    } catch (err) {
+      console.warn("Erro ao processar usuarioLogado:", err);
+    }
+  }
+
+  // ---------- CARROSSEL (se estiver aqui) ----------
+  (function initHero() {
+    const slides = document.querySelectorAll(".hero__slide");
+    if (!slides.length) return;
+    let index = 0;
+    const show = (i) => slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+    show(0);
+    setInterval(() => {
+      index = (index + 1) % slides.length;
+      show(index);
+    }, 5000);
+  })();
+
+  // ---------- MENU MOBILE (se estiver aqui) ----------
+  const toggle = document.querySelector(".nav__toggle");
+  const nav = document.querySelector(".nav");
+  if (toggle && nav) {
+    toggle.addEventListener("click", () => {
+      const open = nav.style.display === "flex";
+      nav.style.display = open ? "none" : "flex";
+      toggle.setAttribute("aria-expanded", String(!open));
+    });
+  }
+});
