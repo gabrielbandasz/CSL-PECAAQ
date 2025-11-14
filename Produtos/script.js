@@ -40,18 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // aceita formatos: array diretamente ou { status: 'ok', produtos: [...] }
             const rawList = Array.isArray(data) ? data : (Array.isArray(data.produtos) ? data.produtos : (data.produtos || []));
-            products = rawList.map(p => ({
-                id: p.id_produto ?? p.id ?? null,
-                title: p.nome ?? p.title ?? 'Produto',
-                brand: p.marca || 'Genérica',
-                category: p.categoria || p.categoria || 'Peças',
-                price: parseFloat((p.preco ?? p.price) || 0) || 0,
-                model: p.sku_universal || p.sku || 'Universal',
-                // ajusta o caminho da imagem: altere se sua pasta for diferente
-                image: (p.foto_principal && !p.foto_principal.startsWith('http') && !p.foto_principal.startsWith('/')) ? "../Dashboard/uploads/" + p.foto_principal : (p.foto_principal || ''),
-                parcels: 3,
-                addedAt: p.data_cadastro ? new Date(p.data_cadastro).getTime() : Date.now()
-            }));
+
+products = rawList.map(p => ({
+    id: p.id_produto ?? p.id ?? null,
+    title: p.nome ?? p.title ?? 'Produto',
+    brand: p.marca || 'Genérica',
+    category: p.categoria || 'Peças',
+    price: parseFloat((p.preco ?? p.price) || 0) || 0,
+    model: p.sku_universal || p.sku || 'Universal',
+    // usa o caminho já retornado pelo servidor — se nulo usa placeholder
+    image: p.foto_principal ? p.foto_principal : '../Produtos/img/placeholder.png',
+    parcels: 3,
+    addedAt: p.data_cadastro ? new Date(p.data_cadastro).getTime() : Date.now()
+}));
 
             filtered = [...products];
 

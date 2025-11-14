@@ -912,3 +912,13 @@ body {
   cursor: pointer;
   font-size: 0.9em;
 }
+span{
+
+    color: white;
+}
+
+span.price-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e05c0b;
+}
