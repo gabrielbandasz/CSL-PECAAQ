@@ -1,3 +1,5 @@
+
+
 const form = document.getElementById("formCadastro");
 const tipoSelect = document.getElementById("tipoCadastro");
 const campoCpfCnpj = document.getElementById("campoCpfCnpj");

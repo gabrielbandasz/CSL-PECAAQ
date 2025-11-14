@@ -1,8 +1,21 @@
 <?php
+// add_to_cart.php (usa produtos)
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(E_ALL);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-// DB (mesmo estilo do seu cadastro/login)
+$id = isset($_POST['id_produto']) ? intval($_POST['id_produto']) : 0;
+$qtd = isset($_POST['quantidade']) ? max(1,intval($_POST['quantidade'])) : 1;
+
+if ($id <= 0) {
+    http_response_code(400);
+    echo json_encode(['status'=>'error','message'=>'id_produto inválido']);
+    exit;
+}
+
+// DB config - ajuste conforme necessário
 $servidor = "localhost";
 $usuario = "root";
 $senha = "";
@@ -11,63 +24,41 @@ $banco = "pecaaq";
 $conn = new mysqli($servidor, $usuario, $senha, $banco);
 if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(['status'=>'error','message'=>'Erro na conexão: '.$conn->connect_error]);
+    echo json_encode(['status'=>'error','message'=>'Erro conexão DB: '.$conn->connect_error]);
     exit;
 }
 
-// Recebe POST (application/x-www-form-urlencoded)
-$id_anuncio = isset($_POST['id_anuncio']) ? (int) $_POST['id_anuncio'] : 0;
-$quantidade = isset($_POST['quantidade']) ? max(1, (int) $_POST['quantidade']) : 1;
-
-if ($id_anuncio <= 0) {
-    http_response_code(400);
-    echo json_encode(['status'=>'error','message'=>'ID de anúncio inválido']);
-    $conn->close();
-    exit;
-}
-
-// opcional: checar se o anúncio existe e preço/estoque
-$stmt = $conn->prepare("SELECT id_anuncio, titulo, preco, quantidade_estoque FROM anuncio WHERE id_anuncio = ? LIMIT 1");
-$stmt->bind_param("i", $id_anuncio);
+// buscar produto (nome, preco, foto) - ajuste nomes de coluna se diferente
+$stmt = $conn->prepare("SELECT id_produto, nome, preco, foto_principal FROM produtos WHERE id_produto = ?");
+$stmt->bind_param("i", $id);
 $stmt->execute();
 $res = $stmt->get_result();
-if ($res->num_rows === 0) {
-    echo json_encode(['status'=>'error','message'=>'Anúncio não encontrado']);
-    $stmt->close();
+$prod = $res->fetch_assoc();
+$stmt->close();
+
+if (!$prod) {
+    http_response_code(404);
+    echo json_encode(['status'=>'error','message'=>'Produto não encontrado']);
     $conn->close();
     exit;
 }
-$anuncio = $res->fetch_assoc();
-$stmt->close();
 
-// inicializa carrinho em sessão
-if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+// garante sessao cart
+if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) $_SESSION['cart'] = [];
+
+// estrutura: $_SESSION['cart'][<id_produto>] = ['quantidade'=>N, 'preco'=>X, 'nome'=>..]
+if (!isset($_SESSION['cart'][$id])) {
+    $_SESSION['cart'][$id] = ['quantidade'=>0, 'preco'=> (float)$prod['preco'], 'nome'=> $prod['nome']];
+}
+$_SESSION['cart'][$id]['quantidade'] += $qtd;
+
+// recalcula totais
+$cart_total = 0.0; $cart_count = 0;
+foreach ($_SESSION['cart'] as $pid => $item) {
+    $cart_total += ((float)$item['preco']) * (int)$item['quantidade'];
+    $cart_count += (int)$item['quantidade'];
 }
 
-// soma quantidades mas não ultrapassa estoque disponível
-$current = $_SESSION['cart'][$id_anuncio] ?? 0;
-$newQty = $current + $quantidade;
-$available = (int)$anuncio['quantidade_estoque'];
-if ($newQty > $available) {
-    // determina máxima permitida
-    $newQty = $available;
-}
-
-$_SESSION['cart'][$id_anuncio] = $newQty;
-
-echo json_encode([
-    'status' => 'ok',
-    'message' => 'Adicionado ao carrinho',
-    'cart_count' => array_sum($_SESSION['cart']),
-    'cart' => $_SESSION['cart'],
-    'item' => [
-       'id_anuncio' => $id_anuncio,
-       'titulo' => $anuncio['titulo'],
-       'preco' => (float)$anuncio['preco'],
-       'quantidade' => $_SESSION['cart'][$id_anuncio]
-    ]
-]);
-
-
+echo json_encode(['status'=>'ok','message'=>'adicionado','cart_count'=>$cart_count,'cart_total'=>number_format($cart_total,2,'.',''),'cart'=>$_SESSION['cart']]);
 $conn->close();
+exit;

@@ -1,135 +1,133 @@
-// ======= Alternar seções =======
-const links = document.querySelectorAll('.sidebar nav a');
-const secDashboard = document.getElementById('sec-dashboard');
-const secPerfil = document.getElementById('sec-perfil');
-const secAdicionar = document.getElementById('sec-adicionar');
+document.addEventListener("DOMContentLoaded", () => {
 
-links.forEach((link, idx) => {
-  link.addEventListener('click', e => {
-    e.preventDefault();
-    // Esconde todas as seções
-    secDashboard.style.display = 'none';
-    secPerfil.style.display = 'none';
-    secAdicionar.style.display = 'none';
-    // Remove active dos links
-    links.forEach(l => l.classList.remove('active'));
-    link.classList.add('active');
-    // Exibe a seção correspondente
-    if(idx === 0) secDashboard.style.display = 'block';
-    if(idx === 1) secPerfil.style.display = 'block';
-    if(idx === 2) secAdicionar.style.display = 'block';
-  });
-});
+  // ==================== CARREGAR PERFIL ====================
+  async function carregarPerfil() {
+    try {
+      const resp = await fetch("perfil_empresa.php", { cache: "no-store" });
+      const data = await resp.json();
 
-// LISTAR produtos (usa o novo formato JSON)
-async function listarProdutos() {
-  try {
-    const resp = await fetch('listarProdutos.php');
-    const json = await resp.json();
-    if (!json || json.status !== 'ok') {
-      console.error('listarProdutos: resposta inválida', json);
-      return;
+      if (!data.erro) {
+        const nome = data.nome_razao_social || "---";
+        const cnpj = data.documento || "---";
+        const email = data.email || "---";
+        const telefone = data.telefone || "---";
+
+        document.getElementById("perfilNomeEmpresa").textContent = nome;
+        document.getElementById("perfilCNPJ").textContent = "CNPJ: " + cnpj;
+        document.getElementById("perfilEmail").textContent = email;
+        document.getElementById("perfilTelefone").textContent = telefone;
+        document.getElementById("headerEmpresaNome").textContent = nome;
+
+        // Salva no localStorage para edição posterior
+        const usuario = {
+          id_usuario: data.id_usuario,
+          nome_razao_social: nome,
+          email: email,
+          telefone: telefone
+        };
+        localStorage.setItem("usuarioLogado", JSON.stringify(usuario));
+      } else {
+        console.warn("Erro ao carregar perfil:", data.msg);
+      }
+    } catch (err) {
+      console.error("Falha ao carregar perfil:", err);
     }
-    const produtos = json.produtos || [];
-    const tbody = document.getElementById('lista-produtos');
-    tbody.innerHTML = '';
-    produtos.forEach(p => {
-      tbody.innerHTML += `
-        <tr>
-          <td><img src="${p.foto_principal}" width="50" style="border-radius:4px;"></td>
-          <td>${p.nome}</td>
-          <td>R$ ${parseFloat(p.preco).toFixed(2)}</td>
-        </tr>
-      `;
+  }
+
+  carregarPerfil();
+
+  // ==================== EDITAR PERFIL ====================
+  const btnEditarPerfil = document.getElementById("btnEditarPerfil");
+  const modalEditarPerfil = document.getElementById("modalEditarPerfil");
+  const btnFecharEditarPerfil = document.getElementById("btnFecharEditarPerfil");
+  const formEditarPerfil = document.getElementById("formEditarPerfil");
+  const msgEditarPerfil = document.getElementById("msgEditarPerfil");
+  const inputEmail = document.getElementById("editarEmail");
+  const inputTelefone = document.getElementById("editarTelefone");
+
+  if (btnEditarPerfil) {
+    btnEditarPerfil.addEventListener("click", async () => {
+      const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
+      if (!usuario) return alert("Nenhum usuário logado!");
+
+      inputEmail.value = usuario.email || "";
+      inputTelefone.value = usuario.telefone || "";
+      msgEditarPerfil.textContent = "";
+
+      modalEditarPerfil.style.display = "block";
     });
-    document.getElementById('totalProdutos').textContent = produtos.length;
-  } catch (err) {
-    console.error('Erro ao listar produtos:', err);
   }
-}
 
-// CADASTRO via AJAX (espera JSON)
-const form = document.getElementById('formProduto');
-const fotoPreview = document.getElementById('fotoPreview');
-
-form.addEventListener('submit', async e => {
-  e.preventDefault();
-  const formData = new FormData(form);
-  try {
-    const resp = await fetch('processaProduto.php', { method: 'POST', body: formData });
-    const json = await resp.json();
-    if (!json) throw new Error('Resposta inválida do servidor');
-    if (json.status === 'ok') {
-      alert(json.message || 'Produto cadastrado');
-      form.reset();
-      fotoPreview.innerHTML = '<span>+</span>';
-      listarProdutos();
-    } else {
-      alert('Erro: ' + (json.message || 'Falha ao cadastrar'));
-    }
-  } catch (err) {
-    console.error('Erro ao cadastrar produto:', err);
-    alert('Erro ao cadastrar produto. Veja console.');
+  if (btnFecharEditarPerfil) {
+    btnFecharEditarPerfil.addEventListener("click", () => {
+      modalEditarPerfil.style.display = "none";
+      formEditarPerfil.reset();
+    });
   }
-});
 
+  if (formEditarPerfil) {
+    formEditarPerfil.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-// ======= Filtro de pesquisa =======
-document.getElementById('search').addEventListener('input', e => {
-  const termo = e.target.value.toLowerCase();
-  document.querySelectorAll('#lista-produtos tr').forEach(tr => {
-    const nome = tr.children[1].textContent.toLowerCase();
-    tr.style.display = nome.includes(termo) ? 'table-row' : 'none';
-  });
-});
+      const usuario = JSON.parse(localStorage.getItem("usuarioLogado"));
+      if (!usuario) return alert("Nenhum usuário logado!");
 
+      const email = inputEmail.value.trim();
+      const telefone = inputTelefone.value.trim();
+      const id_usuario = usuario.id_usuario;
 
-// ======= Preview da imagem =======
-document.getElementById('foto').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = ev => fotoPreview.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">`;
-    reader.readAsDataURL(file);
-  } else {
-    fotoPreview.innerHTML = '<span>+</span>';
+      if (!email || !telefone) {
+        return alert("Preencha email e telefone corretamente.");
+      }
+
+      const formData = new FormData();
+      formData.append("id_usuario", id_usuario);
+      formData.append("email", email);
+      formData.append("telefone", telefone);
+
+      try {
+        const resp = await fetch("atualizarPerfil.php", {
+          method: "POST",
+          body: formData
+        });
+        const data = await resp.json();
+
+        if (data.ok) {
+          alert("Perfil atualizado com sucesso!");
+          document.getElementById("perfilEmail").textContent = email;
+          document.getElementById("perfilTelefone").textContent = telefone;
+
+          usuario.email = email;
+          usuario.telefone = telefone;
+          localStorage.setItem("usuarioLogado", JSON.stringify(usuario));
+
+          modalEditarPerfil.style.display = "none";
+        } else {
+          alert(data.msg || "Erro ao atualizar perfil.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erro de conexão. Tente novamente.");
+      }
+    });
   }
+
+  // ==================== LOGOUT ====================
+  const btnSair = document.getElementById("btnSair");
+  const btnSidebarSair = document.getElementById("btnSidebarSair");
+  const btnSairEmpresa = document.getElementById("btnSairEmpresa");
+
+  // ✅ Caminho fixo para o login (sem erro de porta)
+  const URL_LOGIN = "../login/indexLogin.html";
+
+  function sair() {
+    localStorage.removeItem("usuarioLogado");
+    sessionStorage.clear();
+    window.location.href = URL_LOGIN;
+  }
+
+  if (btnSair) btnSair.addEventListener("click", sair);
+  if (btnSidebarSair) btnSidebarSair.addEventListener("click", sair);
+  if (btnSairEmpresa) btnSairEmpresa.addEventListener("click", sair);
+
 });
-
-// ======= Gráfico de vendas =======
-new Chart(document.getElementById("graficoVendas"), {
-  type: 'bar',
-  data: {
-    labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-    datasets: [
-      { label: 'Vendas', data: [300,400,350,500,480,600,580,540,570,610,620,630], backgroundColor: 'limegreen' },
-      { label: 'Itens', data: [200,250,240,300,280,350,340,320,330,360,370,380], backgroundColor: 'red' }
-    ]
-  },
-  options: { responsive:true, scales:{ y:{ beginAtZero:true } } }
-});
-
-// ======= Inicializa lista de produtos ao carregar página =======
-window.addEventListener('load', listarProdutos);
-document.addEventListener('DOMContentLoaded', () => {
-    const perfilContainer = document.getElementById('perfil-container');
-    const loginLink = document.getElementById('loginLink');
-    const usuario = JSON.parse(localStorage.getItem('usuarioLogado'));
-
-    if (usuario) {
-      // Mostra nome/ícone de perfil
-      perfilContainer.innerHTML = `
-        <div class="perfil-info">
-          <img src="../Login/imgLogin/perfil.png" alt="Perfil" class="perfil-icon">
-          <span>${usuario.nome}</span>
-          <button id="logoutBtn">Sair</button>
-        </div>
-      `;
-
-      // botão de sair
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('usuarioLogado');
-        window.location.reload();
-      });
-    }
-  });

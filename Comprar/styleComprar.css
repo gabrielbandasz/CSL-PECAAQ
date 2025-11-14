@@ -1437,6 +1437,7 @@ body.modal-open {
   box-shadow: 0 12px 40px rgba(0,0,0,0.45) !important;
   z-index: 100000 !important;
   pointer-events: auto !important;
+  
 }
 body.modal-open { overflow: hidden !important; }
 
@@ -1459,4 +1460,13 @@ body.modal-open { overflow: hidden !important; }
   color: #ff6666;
   cursor: pointer;
   font-size: 0.9em;
+}
+p{
+  color: #333;
+}
+h2{
+  color: #333;
+}
+div{
+  color: #333;
 }

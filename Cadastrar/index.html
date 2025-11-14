@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -6,47 +8,53 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <form id="formCadastro" method="POST" action="cadastrar.php">
-    <label>Tipo de cadastro</label>
-    <select name="tipo" id="tipoCadastro">
-      <option value="Cliente">Cliente</option>
-      <option value="Empresa">Empresa</option>
-    </select>
 
-    <label>Nome / Razão Social</label>
-    <input type="text" name="nome" required>
+  <div class="container">
+    <h2>Cadastro</h2>
 
-    <label>E-mail</label>
-    <input type="email" name="email" required>
+    <form id="formCadastro" method="POST" action="cadastrar.php">
 
-    <label>Senha</label>
-    <input type="password" name="senha" required>
+      <label>Tipo de cadastro</label>
+      <select name="tipo" id="tipoCadastro">
+        <option value="Cliente">Cliente</option>
+        <option value="Empresa">Empresa</option>
+      </select>
 
-    <label>Confirme a senha</label>
-    <input type="password" id="confirmarSenha" required>
+      <label>Nome / Razão Social</label>
+      <input type="text" name="nome" required>
 
-    <div id="campoCpfCnpj">
-      <label id="labelCpfCnpj">CPF</label>
-      <input type="text" id="inputCpfCnpj" name="cpf_cnpj" placeholder="Somente números" required>
-    </div>
+      <label>E-mail</label>
+      <input type="email" name="email" required>
 
-    <label>Telefone</label>
-    <input type="text" name="telefone">
+      <label>Senha</label>
+      <input type="password" name="senha" required>
 
-    <button type="submit">Cadastrar</button>
-  </form>
+      <label>Confirme a senha</label>
+      <input type="password" id="confirmarSenha" required>
+
+      <div id="campoCpfCnpj">
+        <label id="labelCpfCnpj">CPF</label>
+        <input type="text" id="inputCpfCnpj" name="cpf_cnpj" placeholder="Somente números" required>
+      </div>
+
+      <label>Telefone</label>
+      <input type="text" name="telefone">
+
+      <button type="submit" class="btn-cadastrar">Cadastrar</button>
+      <a href="../Login/indexLogin.html" class="voltar">Voltar</a>
+
+    </form>
+  </div>
 
   <script>
-    // Script para mudar label e placeholder do CPF/CNPJ
     const tipoCadastro = document.getElementById('tipoCadastro');
     const labelCpfCnpj = document.getElementById('labelCpfCnpj');
     const inputCpfCnpj = document.getElementById('inputCpfCnpj');
     const form = document.getElementById('formCadastro');
     const confirmarSenha = document.getElementById('confirmarSenha');
 
-    // Atualiza label e placeholder ao mudar tipo
     tipoCadastro.addEventListener('change', () => {
-      if(tipoCadastro.value === 'Cliente'){
+      if (tipoCadastro.value === 'Cliente') {
         labelCpfCnpj.textContent = 'CPF';
         inputCpfCnpj.placeholder = 'Somente números';
       } else {
@@ -55,13 +63,13 @@
       }
     });
 
-    // Valida senha antes de enviar
     form.addEventListener('submit', (e) => {
-      if(form.senha.value !== confirmarSenha.value){
+      if (form.senha.value !== confirmarSenha.value) {
         e.preventDefault();
         alert("As senhas não conferem!");
       }
     });
   </script>
+
 </body>
 </html>
